@@ -1,5 +1,6 @@
 import Vue from "vue";
 import { Button, Table, message, Upload, Icon } from "ant-design-vue";
+import Ant from "ant-design-vue";
 import App from "./App.vue";
 import router from "./router";
 import store from "./store";
@@ -11,6 +12,9 @@ Vue.use(Button);
 Vue.use(Table);
 Vue.use(Upload);
 Vue.use(Icon);
+
+
+Vue.use(Ant);
 
 Vue.use(XLSX);
 
