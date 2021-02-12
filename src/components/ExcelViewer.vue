@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <a-row>
-      <h1 @click="equality3()">Excel Viewer</h1>
+      <h1 @click="equality3">Excel Viewer</h1>
       <div>
         <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
       </div>
@@ -59,7 +59,7 @@ export default class ExcelViewer extends Vue {
   jsonData: any = [];
   fileList = [];
   columns = [];
-  dataTable = [];
+  dataTable: any = [];
   data = [];
   loaded = false;
 
@@ -69,7 +69,7 @@ export default class ExcelViewer extends Vue {
     const params = new Map();
     // params.set("x", { value: "25", key: "A" });
     // params.set("y", { value: "11", key: "B" });
-    // params.set("operator", "OR");
+    // params.set("operator", "AND");
 
     // params.set("x", { value: "25", key: "A" });
     // params.set("y", { value: "11", key: "B" });
@@ -83,7 +83,7 @@ export default class ExcelViewer extends Vue {
     // params.set("y", "1");
     // params.set("operator", "LIKE");
     //
-    // this.equality2(params);
+    this.equality2(params);
   }
 
   // равенство
@@ -92,28 +92,27 @@ export default class ExcelViewer extends Vue {
     const y = params.get("y");
     const operator = params.get("operator");
 
+    let result = undefined;
+
     switch (operator) {
       case "AND":
-        console.log(
-          this.data.filter(
-            item => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]
-          )
+        result = this.data.filter(
+          item => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]
         );
         break;
       case "OR":
-        console.log(
-          this.data.filter(
-            item => item[x["key"]] == x["value"] || item[y["key"]] == y["value"]
-          )
+        result = this.data.filter(
+          item => item[x["key"]] == x["value"] || item[y["key"]] == y["value"]
         );
         break;
       case "LIKE":
-        console.log(this.data.filter(item => item[x].toString().startsWith(y)));
+        result = this.data.filter(item => item[x].toString().startsWith(y));
         break;
       case "=":
-        console.log(this.data.filter(item => item[x] == y));
+        result = this.data.filter(item => item[x] == y);
         break;
     }
+    return result;
   }
 
   // равенство
@@ -125,15 +124,59 @@ export default class ExcelViewer extends Vue {
     }
   }
 
+
   // Строка фильтра
   changeFilter() {
+    const params = new Map();
     if (this.filterStr) {
-      const str = this.filterStr.split("");
-      this.dataTable = this.equality(str);
+      if (this.filterStr.includes("=")) {
+        const x = this.filterStr.split("=")[0];
+        const y = this.filterStr.split("=")[1];
+        params.set("x", x.toString());
+        params.set("y", y.toString());
+        params.set("operator", "=");
+        // console.log("changeFilter", params);
+        // console.log(this.equality2(params));
+        this.dataTable = this.equality2(params);
+      } else if (this.filterStr.includes("LIKE")) {
+        const x = this.filterStr.split("LIKE")[0].trim();
+        const y = this.filterStr.split("LIKE")[1].trim();
+        params.set("x", x.toString());
+        params.set("y", y.toString());
+        params.set("operator", "LIKE");
+        this.dataTable = this.equality2(params);
+      } else if (this.filterStr.includes("AND")) {
+        const x = this.filterStr.split("AND")[0];
+        const y = this.filterStr.split("AND")[1];
+        console.log("AND", x, y);
+        if (x && y) {
+          params.set("x", {
+            value: this.split(x, "=").left,
+            key: this.split(x, "=").right
+          });
+          params.set("y", {
+            value: this.split(y, "=").left,
+            key: this.split(y, "=").right
+          });
+          params.set("operator", "AND");
+        }
+        this.dataTable = this.equality2(params);
+      }
     } else {
       this.dataTable = this.data;
     }
   }
+
+  split(str: string, separator: string) {
+    return {
+      left: str.split(separator)[0].toString(),
+      right: str.split(separator)[1].toString()
+    };
+  }
+
+  // params.set("x", { value: "25", key: "A" });
+  // params.set("y", { value: "11", key: "B" });
+  // params.set("operator", "AND");
 
   sortWithWorker(a: any, b: any, key: string) {
     const worker = new Worker("sort.worker.js");
