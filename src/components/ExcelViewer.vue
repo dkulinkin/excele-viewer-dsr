@@ -1,7 +1,17 @@
 <template>
   <div class="container">
     <a-row>
-      <h1>Excel Viewer</h1>
+      <h1>Excel Viewer {{ counter }}</h1>
+      <!--      <div>
+              <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
+            </div>-->
+      <div>
+        <a-progress :percent="100" :height="100" status="active" />
+      </div>
+      <div>
+        <button type="button" @click="test">Test</button>
+        <button type="button" @click="testWorker">Test Worker</button>
+      </div>
     </a-row>
     <a-row>
       <a-upload
@@ -9,11 +19,9 @@
         name="file"
         :multiple="false"
         :beforeUpload="reset"
-        :openFileDialogOnClick="!disabled"
-        :showUploadList="false"
-        accept=".xls,.xlsx"
-        :disabled="disabled"
-        action="https://www.mocky.io/v2/5cc8019d300000980a055e76"
+        accept=".xlx, .xlsx"
+        maxCount="{1}"
+        action="https://run.mocky.io/v3/8e6f45c6-60da-4dea-9908-0c26e51a7dad"
         @change="handleChange"
         class="upload-component"
       >
@@ -44,13 +52,57 @@ import XLSX from "xlsx";
 
 @Component({})
 export default class ExcelViewer extends Vue {
-  jsonData = [];
+  jsonData: any = [];
   fileList = [];
   columns = [];
   dataTable = [];
   disabled = false;
   loading = false;
   loaded = false;
+
+  counter = 0;
+
+  mounted() {
+    /*if (window.Worker) {
+      const worker = new Worker("worker.js");
+      console.log("Worker create success!");
+      worker.postMessage([10, 10]);
+      worker.onmessage = ({ data }) => console.log(data);
+    }*/
+  }
+
+  test() {
+    console.log("Test!!!");
+  }
+
+  testWorker() {
+    if (window.Worker) {
+      const worker = new Worker("worker.js");
+      console.log("Worker create success sort TEST!");
+      worker.onmessage = ({ data }) => {
+        console.log("Result", data);
+      };
+
+      worker.postMessage([1, 300]);
+
+      // worker.terminate();
+    }
+  }
+
+  sortByWorker(a: any, b: any, key: string) {
+    let result = -1;
+    if (window.Worker) {
+      const worker = new Worker("sort.worker.js");
+      console.group(key);
+      worker.onmessage = ({ data }) => {
+        console.log(a[key], b[key]);
+        result = data;
+      };
+      worker.postMessage([a[key], b[key]]);
+      console.groupEnd();
+    }
+    return result;
+  }
 
   reset() {
     this.jsonData = [];
@@ -62,7 +114,6 @@ export default class ExcelViewer extends Vue {
     this.loading = true;
     if (info.file.status === "done") {
       this.$message.success(`${info.file.name} file uploaded successfully`);
-
       this.jsonData = await this.convert(info.file.originFileObj);
       this.dataTable = await this.getData(this.jsonData);
       this.loaded = true;
@@ -98,7 +149,9 @@ export default class ExcelViewer extends Vue {
         title: key,
         key: key.toString(),
         dataIndex: key,
-        sorter: (a, b) => String(a[key]).length - String(b[key]).length,
+        sorter: (a, b) => {
+          return this.sortByWorker(a, b, key);
+        },
         ellipsis: true
       });
       index++;
