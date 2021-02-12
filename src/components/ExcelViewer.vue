@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <a-row>
-      <h1>Excel Viewer</h1>
+      <h1 @click="equality3()">Excel Viewer</h1>
       <div>
         <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
       </div>
@@ -63,25 +63,38 @@ export default class ExcelViewer extends Vue {
 
   filterStr = "";
 
+
+  equality3() {
+    const params = new Map();
+    params.set("x", { value: "25", key: "A" });
+    params.set("y", { value: "11", key: "B" });
+    params.set("operator", "OR");
+    this.equality2(params);
+  }
+
+
+  // равенство
+  equality2(params) {
+    const x = params.get("x");
+    const y = params.get("y");
+    const operator = params.get("operator");
+
+    if (operator === "AND") {
+      console.log(this.data.filter(item => (item[x["key"]] == x["value"] && item[y["key"]] == y["value"])));
+    } else if (operator === "OR") {
+      console.log(this.data.filter(item => (item[x["key"]] == x["value"] || item[y["key"]] == y["value"])));
+    }
+  }
+
   // равенство
   equality(str) {
     if (str.includes("=")) {
-      const columnName = this.filterStr.split("=")[0];
-      const value = this.filterStr.split("=")[1];
+      const columnName = str.split("=")[0];
+      const value = str.split("=")[1];
       return this.data.filter(item => item[columnName] == value);
     }
   }
 
-  // Оператор AND
-  operatorAND() {
-    const str = this.filterStr.split(" ");
-    if (str.includes("AND")) {
-      console.log("AND", str)
-      const o1 = this.filterStr.split("AND")[0];
-      const o2 = this.filterStr.split("AND")[1];
-      console.log(o1, o2)
-    }
-  }
   // Строка фильтра
   changeFilter() {
     if (this.filterStr) {
