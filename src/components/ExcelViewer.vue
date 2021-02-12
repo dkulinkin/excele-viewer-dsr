@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <a-row>
-      <h1>Excel Viewer {{ counter }}</h1>
+      <h1>Excel Viewer</h1>
       <div>
         <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
       </div>
@@ -39,7 +39,7 @@
           :columns="getColumns"
           :data-source="dataTable"
           bordered
-          :loading="loading"
+          :loading="!loaded"
           :pagination="false"
         />
       </a-col>
@@ -57,33 +57,40 @@ export default class ExcelViewer extends Vue {
   fileList = [];
   columns = [];
   dataTable = [];
-  disabled = false;
-  loading = false;
+  data = [];
   loaded = false;
 
-  counter = 0;
+
   filterStr = "";
 
+  // равенство
   equality(str) {
     if (str.includes("=")) {
       const columnName = this.filterStr.split("=")[0];
       const value = this.filterStr.split("=")[1];
-      console.log("Param", columnName, value);
-      const data = this.dataTable.filter(item => {
-        console.log("Item", item[columnName] == value);
-        return item[columnName] == value;
-      });
-      console.log("I`m Finder!", data);
+      return this.data.filter(item => item[columnName] == value);
     }
   }
 
+  // Оператор AND
+  operatorAND() {
+    const str = this.filterStr.split(" ");
+    if (str.includes("AND")) {
+      console.log("AND", str)
+      const o1 = this.filterStr.split("AND")[0];
+      const o2 = this.filterStr.split("AND")[1];
+      console.log(o1, o2)
+    }
+  }
+  // Строка фильтра
   changeFilter() {
     if (this.filterStr) {
       const str = this.filterStr.split("");
-      this.equality(str);
+      this.dataTable = this.equality(str);
+    } else {
+      this.dataTable = this.data;
     }
-  };
-
+  }
 
   sortWithWorker(a: any, b: any, key: string) {
     const worker = new Worker("sort.worker.js");
@@ -108,20 +115,20 @@ export default class ExcelViewer extends Vue {
   }
 
   async handleChange(info) {
-    this.loading = true;
     if (info.file.status === "done") {
-      this.$message.success(`${info.file.name} file uploaded successfully`);
       this.jsonData = await this.convert(info.file.originFileObj);
-      this.dataTable = await this.getData(this.jsonData);
+      this.data = await this.dataFormatting(this.jsonData);
+      this.dataTable = this.data;
       this.loaded = true;
-    } else if (info.file.status === "error") {
-      this.$message.error(`${info.file.name} file upload failed.`);
+    } else {
+      if (info.file.status === "error") {
+        this.$message.error(`${info.file.name} file upload failed.`);
+      }
     }
-    this.loading = false;
-    this.disabled = true;
   }
 
-  getData(data) {
+  // Подгоняем под данные таблицы
+  dataFormatting(data) {
     const res = data.map((item, index) => {
       return {
         key: index,
