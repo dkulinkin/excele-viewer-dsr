@@ -5,8 +5,7 @@
       <div>
         <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
       </div>
-      <div>
-      </div>
+      <div></div>
     </a-row>
     <a-row>
       <a-upload
@@ -28,7 +27,11 @@
     </a-row>
     <a-row>
       <a-col span="24">
-        <a-input v-model="filterStr" placeholder="Filter" @change="changeFilter" />
+        <a-input
+          v-model="filterStr"
+          placeholder="Filter"
+          @change="changeFilter"
+        />
       </a-col>
     </a-row>
     <a-row>
@@ -60,18 +63,28 @@ export default class ExcelViewer extends Vue {
   data = [];
   loaded = false;
 
-
   filterStr = "";
-
 
   equality3() {
     const params = new Map();
-    params.set("x", { value: "25", key: "A" });
-    params.set("y", { value: "11", key: "B" });
-    params.set("operator", "OR");
-    this.equality2(params);
-  }
+    // params.set("x", { value: "25", key: "A" });
+    // params.set("y", { value: "11", key: "B" });
+    // params.set("operator", "OR");
 
+    // params.set("x", { value: "25", key: "A" });
+    // params.set("y", { value: "11", key: "B" });
+    // params.set("operator", "OR");
+
+    // params.set("x", "A");
+    // params.set("y", "25");
+    // params.set("operator", "=");
+
+    // params.set("x", "A");
+    // params.set("y", "1");
+    // params.set("operator", "LIKE");
+    //
+    // this.equality2(params);
+  }
 
   // равенство
   equality2(params) {
@@ -79,10 +92,27 @@ export default class ExcelViewer extends Vue {
     const y = params.get("y");
     const operator = params.get("operator");
 
-    if (operator === "AND") {
-      console.log(this.data.filter(item => (item[x["key"]] == x["value"] && item[y["key"]] == y["value"])));
-    } else if (operator === "OR") {
-      console.log(this.data.filter(item => (item[x["key"]] == x["value"] || item[y["key"]] == y["value"])));
+    switch (operator) {
+      case "AND":
+        console.log(
+          this.data.filter(
+            item => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]
+          )
+        );
+        break;
+      case "OR":
+        console.log(
+          this.data.filter(
+            item => item[x["key"]] == x["value"] || item[y["key"]] == y["value"]
+          )
+        );
+        break;
+      case "LIKE":
+        console.log(this.data.filter(item => item[x].toString().startsWith(y)));
+        break;
+      case "=":
+        console.log(this.data.filter(item => item[x] == y));
+        break;
     }
   }
 
