@@ -1,9 +1,9 @@
 <template>
   <div class="container">
     <a-row>
-      <h1 @click="equality3">Excel Viewer</h1>
+      <h1>Excel Viewer</h1>
       <div>
-        <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
+        <img v-if="preLoader" src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
       </div>
       <div></div>
     </a-row>
@@ -31,11 +31,11 @@
           v-model="filterStr"
           placeholder="Filter"
           @change="changeFilter"
+          v-if="loaded"
         />
       </a-col>
     </a-row>
     <a-row>
-      {{ dataTable }}
       <a-col span="24">
         <a-table
           v-if="loaded"
@@ -62,32 +62,12 @@ export default class ExcelViewer extends Vue {
   dataTable: any = [];
   data = [];
   loaded = false;
+  preLoader = false;
 
   filterStr = "";
 
-  equality3() {
-    const params = new Map();
-    // params.set("x", { value: "25", key: "A" });
-    // params.set("y", { value: "11", key: "B" });
-    // params.set("operator", "AND");
-
-    // params.set("x", { value: "25", key: "A" });
-    // params.set("y", { value: "11", key: "B" });
-    // params.set("operator", "OR");
-
-    // params.set("x", "A");
-    // params.set("y", "25");
-    // params.set("operator", "=");
-
-    // params.set("x", "A");
-    // params.set("y", "1");
-    // params.set("operator", "LIKE");
-    //
-    this.equality2(params);
-  }
-
   // равенство
-  equality2(params) {
+  filterTableData(params) {
     const x = params.get("x");
     const y = params.get("y");
     const operator = params.get("operator");
@@ -97,19 +77,18 @@ export default class ExcelViewer extends Vue {
     switch (operator) {
       case "AND":
         result = this.data.filter(
-          item => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]
-        );
+          (item) => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]);
         break;
       case "OR":
         result = this.data.filter(
-          item => item[x["key"]] == x["value"] || item[y["key"]] == y["value"]
+          (item) => item[x["key"]] == x["value"] || item[y["key"]] == y["value"]
         );
         break;
       case "LIKE":
-        result = this.data.filter(item => item[x].toString().startsWith(y));
+        result = this.data.filter((item) => item[x].toString().startsWith(y));
         break;
       case "=":
-        result = this.data.filter(item => item[x] == y);
+        result = this.data.filter((item) => item[x] == y);
         break;
     }
     return result;
@@ -120,10 +99,9 @@ export default class ExcelViewer extends Vue {
     if (str.includes("=")) {
       const columnName = str.split("=")[0];
       const value = str.split("=")[1];
-      return this.data.filter(item => item[columnName] == value);
+      return this.data.filter((item) => item[columnName] == value);
     }
   }
-
 
   // Строка фильтра
   changeFilter() {
@@ -132,51 +110,67 @@ export default class ExcelViewer extends Vue {
       if (this.filterStr.includes("=")) {
         const x = this.filterStr.split("=")[0];
         const y = this.filterStr.split("=")[1];
-        params.set("x", x.toString());
-        params.set("y", y.toString());
-        params.set("operator", "=");
-        // console.log("changeFilter", params);
-        // console.log(this.equality2(params));
-        this.dataTable = this.equality2(params);
-      } else if (this.filterStr.includes("LIKE")) {
-        const x = this.filterStr.split("LIKE")[0].trim();
-        const y = this.filterStr.split("LIKE")[1].trim();
-        params.set("x", x.toString());
-        params.set("y", y.toString());
-        params.set("operator", "LIKE");
-        this.dataTable = this.equality2(params);
-      } else if (this.filterStr.includes("AND")) {
-        const x = this.filterStr.split("AND")[0];
-        const y = this.filterStr.split("AND")[1];
-        console.log("AND", x, y);
         if (x && y) {
-          params.set("x", {
-            value: this.split(x, "=").left,
-            key: this.split(x, "=").right
-          });
-          params.set("y", {
-            value: this.split(y, "=").left,
-            key: this.split(y, "=").right
-          });
-          params.set("operator", "AND");
+          params.set("x", x.toString());
+          params.set("y", y.toString());
+          params.set("operator", "=");
+
+          this.dataTable = this.filterTableData(params);
         }
-        this.dataTable = this.equality2(params);
       }
+      if (this.filterStr.includes("LIKE")) {
+        const x = this.filterStr.split("LIKE")[0].trim();
+        const y = this.filterStr.split("LIKE")[1].trim().replace(/"/g, "");
+        if (x && y) {
+          params.set("x", x.toString());
+          params.set("y", y.toString());
+          params.set("operator", "LIKE");
+          this.dataTable = this.filterTableData(params);
+        }
+      }
+      if (this.filterStr.includes("AND")) {
+        this.operatorANDWithOR(params, "AND");
+      }
+
+      if (this.filterStr.includes("OR")) {
+        this.operatorANDWithOR(params, "OR");
+      }
+
     } else {
       this.dataTable = this.data;
     }
   }
 
+  operatorANDWithOR(params, operator) {
+    if (this.filterStr.includes(operator)) {
+
+      const x = this.filterStr.split(operator)[0].trim();
+      const y = this.filterStr.split(operator)[1].trim();
+
+      if (x && y) {
+        if (x.includes("=") && y.includes("=")) {
+          params.set("x", {
+            key: this.split(x, "=").left,
+            value: this.split(x, "=").right
+          });
+          params.set("y", {
+            key: this.split(y, "=").left,
+            value: this.split(y, "=").right
+          });
+          params.set("operator", operator);
+        }
+      }
+      this.dataTable = this.filterTableData(params);
+    }
+  }
+
   split(str: string, separator: string) {
     return {
-      left: str.split(separator)[0].toString(),
-      right: str.split(separator)[1].toString()
+      left: str.length > 0 ? str.split(separator)[0].toString() : "",
+      right: str.length > 0 ? str.split(separator)[1].toString() : ""
     };
   }
 
-  // params.set("x", { value: "25", key: "A" });
-  // params.set("y", { value: "11", key: "B" });
-  // params.set("operator", "AND");
 
   sortWithWorker(a: any, b: any, key: string) {
     const worker = new Worker("sort.worker.js");
@@ -201,11 +195,17 @@ export default class ExcelViewer extends Vue {
   }
 
   async handleChange(info) {
+    if (info.file.status === "uploading") {
+      this.preLoader = true;
+    }
     if (info.file.status === "done") {
       this.jsonData = await this.convert(info.file.originFileObj);
       this.data = await this.dataFormatting(this.jsonData);
       this.dataTable = this.data;
       this.loaded = true;
+      setTimeout(()=>{
+        this.preLoader = false;
+      }, 3000)
     } else {
       if (info.file.status === "error") {
         this.$message.error(`${info.file.name} file upload failed.`);
@@ -253,7 +253,7 @@ export default class ExcelViewer extends Vue {
 
   // Достаём данные из файла
   convert(selectedFile: any) {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const fileReader = new FileReader();
       let result = undefined;
       fileReader.onload = (e: any) => {
