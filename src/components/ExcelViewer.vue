@@ -108,8 +108,8 @@ export default class ExcelViewer extends Vue {
     const params = new Map();
     if (this.filterStr) {
       if (this.filterStr.includes("=")) {
-        const x = this.filterStr.split("=")[0];
-        const y = this.filterStr.split("=")[1];
+        const x = this.filterStr.split("=")[0].trim();
+        const y = this.filterStr.split("=")[1].trim();
         if (x && y) {
           params.set("x", x.toString());
           params.set("y", y.toString());
