@@ -2,15 +2,10 @@
   <div class="container">
     <a-row>
       <h1>Excel Viewer {{ counter }}</h1>
-      <!--      <div>
-              <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
-            </div>-->
       <div>
-        <a-progress :percent="100" :height="100" status="active" />
+        <img src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
       </div>
       <div>
-        <button type="button" @click="test">Test</button>
-        <button type="button" @click="testWorker">Test Worker</button>
       </div>
     </a-row>
     <a-row>
@@ -32,6 +27,12 @@
       </a-upload>
     </a-row>
     <a-row>
+      <a-col span="24">
+        <a-input v-model="filterStr" placeholder="Filter" @change="changeFilter" />
+      </a-col>
+    </a-row>
+    <a-row>
+      {{ dataTable }}
       <a-col span="24">
         <a-table
           v-if="loaded"
@@ -61,46 +62,42 @@ export default class ExcelViewer extends Vue {
   loaded = false;
 
   counter = 0;
+  filterStr = "";
 
-  mounted() {
-    /*if (window.Worker) {
-      const worker = new Worker("worker.js");
-      console.log("Worker create success!");
-      worker.postMessage([10, 10]);
-      worker.onmessage = ({ data }) => console.log(data);
-    }*/
-  }
-
-  test() {
-    console.log("Test!!!");
-  }
-
-  testWorker() {
-    if (window.Worker) {
-      const worker = new Worker("worker.js");
-      console.log("Worker create success sort TEST!");
-      worker.onmessage = ({ data }) => {
-        console.log("Result", data);
-      };
-
-      worker.postMessage([1, 300]);
-
-      // worker.terminate();
+  equality(str) {
+    if (str.includes("=")) {
+      const columnName = this.filterStr.split("=")[0];
+      const value = this.filterStr.split("=")[1];
+      console.log("Param", columnName, value);
+      const data = this.dataTable.filter(item => {
+        console.log("Item", item[columnName] == value);
+        return item[columnName] == value;
+      });
+      console.log("I`m Finder!", data);
     }
   }
 
-  sortByWorker(a: any, b: any, key: string) {
+  changeFilter() {
+    if (this.filterStr) {
+      const str = this.filterStr.split("");
+      this.equality(str);
+    }
+  };
+
+
+  sortWithWorker(a: any, b: any, key: string) {
+    const worker = new Worker("sort.worker.js");
+    const res = this.workerTask(worker, a, b, key);
+    worker.terminate();
+    return res;
+  }
+
+  workerTask(worker: Worker, a: any, b: any, key: string) {
     let result = -1;
-    if (window.Worker) {
-      const worker = new Worker("sort.worker.js");
-      console.group(key);
-      worker.onmessage = ({ data }) => {
-        console.log(a[key], b[key]);
-        result = data;
-      };
-      worker.postMessage([a[key], b[key]]);
-      console.groupEnd();
-    }
+    worker.onmessage = ({ data }) => {
+      result = data;
+    };
+    worker.postMessage([a[key], b[key]]);
     return result;
   }
 
@@ -150,8 +147,9 @@ export default class ExcelViewer extends Vue {
         key: key.toString(),
         dataIndex: key,
         sorter: (a, b) => {
-          return this.sortByWorker(a, b, key);
+          return this.sortWithWorker(a, b, key);
         },
+        //sorter: (a, b) => String(a[key]) > String(b[key]),
         ellipsis: true
       });
       index++;

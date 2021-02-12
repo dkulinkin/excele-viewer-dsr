@@ -6,5 +6,4 @@ onmessage = function(e) {
     arr.push(Math.floor(rand));
   }
   postMessage(arr);
-  self.close();
 };
