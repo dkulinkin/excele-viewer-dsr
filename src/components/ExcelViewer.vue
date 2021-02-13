@@ -2,9 +2,6 @@
   <div class="container">
     <a-row>
       <h1>Excel Viewer</h1>
-      <div>
-        <img v-if="preLoader" src="@/assets/VkTV.gif" width="200" height="150" alt="chu" />
-      </div>
       <div></div>
     </a-row>
     <a-row>
@@ -57,16 +54,19 @@ import XLSX from "xlsx";
 @Component({})
 export default class ExcelViewer extends Vue {
   jsonData: any = [];
-  fileList = [];
   columns = [];
   dataTable: any = [];
   data = [];
   loaded = false;
-  preLoader = false;
-
   filterStr = "";
 
-  // равенство
+  reset() {
+    this.columns = [];
+    this.dataTable = [];
+    this.filterStr = "";
+  }
+
+  // Фильтруем данные
   filterTableData(params) {
     const x = params.get("x");
     const y = params.get("y");
@@ -92,15 +92,6 @@ export default class ExcelViewer extends Vue {
         break;
     }
     return result;
-  }
-
-  // равенство
-  equality(str) {
-    if (str.includes("=")) {
-      const columnName = str.split("=")[0];
-      const value = str.split("=")[1];
-      return this.data.filter((item) => item[columnName] == value);
-    }
   }
 
   // Строка фильтра
@@ -141,6 +132,7 @@ export default class ExcelViewer extends Vue {
     }
   }
 
+  // AND, OR
   operatorANDWithOR(params, operator) {
     if (this.filterStr.includes(operator)) {
 
@@ -188,12 +180,6 @@ export default class ExcelViewer extends Vue {
     return result;
   }
 
-  reset() {
-    this.jsonData = [];
-    this.fileList = [];
-    this.columns = [];
-  }
-
   async handleChange(info) {
     if (info.file.status === "uploading") {
       this.preLoader = true;
@@ -203,9 +189,6 @@ export default class ExcelViewer extends Vue {
       this.data = await this.dataFormatting(this.jsonData);
       this.dataTable = this.data;
       this.loaded = true;
-      setTimeout(()=>{
-        this.preLoader = false;
-      }, 3000)
     } else {
       if (info.file.status === "error") {
         this.$message.error(`${info.file.name} file upload failed.`);
