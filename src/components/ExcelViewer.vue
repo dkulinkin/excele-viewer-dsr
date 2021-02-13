@@ -61,9 +61,11 @@ export default class ExcelViewer extends Vue {
   filterStr = "";
 
   reset() {
+    this.jsonData = [];
     this.columns = [];
     this.dataTable = [];
     this.filterStr = "";
+    this.loaded = false;
   }
 
   // Фильтруем данные
@@ -77,7 +79,8 @@ export default class ExcelViewer extends Vue {
     switch (operator) {
       case "AND":
         result = this.data.filter(
-          (item) => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]);
+          (item) => item[x["key"]] == x["value"] && item[y["key"]] == y["value"]
+        );
         break;
       case "OR":
         result = this.data.filter(
@@ -126,7 +129,6 @@ export default class ExcelViewer extends Vue {
       if (this.filterStr.includes("OR")) {
         this.operatorANDWithOR(params, "OR");
       }
-
     } else {
       this.dataTable = this.data;
     }
@@ -135,7 +137,6 @@ export default class ExcelViewer extends Vue {
   // AND, OR
   operatorANDWithOR(params, operator) {
     if (this.filterStr.includes(operator)) {
-
       const x = this.filterStr.split(operator)[0].trim();
       const y = this.filterStr.split(operator)[1].trim();
 
@@ -163,27 +164,18 @@ export default class ExcelViewer extends Vue {
     };
   }
 
-
   sortWithWorker(a: any, b: any, key: string) {
     const worker = new Worker("sort.worker.js");
-    const res = this.workerTask(worker, a, b, key);
-    worker.terminate();
-    return res;
-  }
-
-  workerTask(worker: Worker, a: any, b: any, key: string) {
     let result = -1;
     worker.onmessage = ({ data }) => {
       result = data;
     };
     worker.postMessage([a[key], b[key]]);
+    worker.terminate();
     return result;
   }
 
   async handleChange(info) {
-    if (info.file.status === "uploading") {
-      this.preLoader = true;
-    }
     if (info.file.status === "done") {
       this.jsonData = await this.convert(info.file.originFileObj);
       this.data = await this.dataFormatting(this.jsonData);
@@ -196,22 +188,21 @@ export default class ExcelViewer extends Vue {
     }
   }
 
-  // Подгоняем под данные таблицы
+  // Форматируем данные для таблицы
   dataFormatting(data) {
-    const res = data.map((item, index) => {
+    return data.map((item, index) => {
       return {
         key: index,
         ...item
       };
     });
-    return res;
   }
 
   get getColumns() {
     return this.getColumnsList() || [];
   }
 
-  // Получаем заголовки
+  // Работаем с колонками
   getColumnsList() {
     const raw = this.jsonData[0];
     const tmp = [];
@@ -225,7 +216,6 @@ export default class ExcelViewer extends Vue {
         sorter: (a, b) => {
           return this.sortWithWorker(a, b, key);
         },
-        //sorter: (a, b) => String(a[key]) > String(b[key]),
         ellipsis: true
       });
       index++;
@@ -243,7 +233,6 @@ export default class ExcelViewer extends Vue {
         const data = e.target.result;
         const workbook = XLSX.read(data, { type: "binary" });
         workbook.SheetNames.forEach((sheet: any) => {
-          //const jsonObject = JSON.stringify(rowObject);
           result = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheet]);
           resolve(result);
         });

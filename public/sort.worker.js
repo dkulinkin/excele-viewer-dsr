@@ -5,5 +5,4 @@ onmessage = function({ data }) {
     else return 0;
   };
   postMessage(workerResult);
-  //self.close()
 };
