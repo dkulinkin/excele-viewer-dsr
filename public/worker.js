@@ -1,9 +1,18 @@
-onmessage = function(e) {
-  console.log("Inner");
-  const arr = [];
-  for (let i = 0; i < 1e1000; i++) {
-    const rand = e.data[0] + Math.random() * (e.data[1] + 1 - e.data[0]);
-    arr.push(Math.floor(rand));
+self.onmessage = ({ data }) => {
+  const order = data[0];
+  const columnKey = data[1];
+  const dataTable = data[2];
+  const initData = data[3];
+
+  let result = [];
+  const prevData = initData;
+  if (order === "ascend") {
+    result = dataTable.sort((a, b) => String(a[columnKey]) > String(b[columnKey]) ? 1 : -1);
+  } else {
+    result = dataTable.sort((a, b) => String(a[columnKey]) > String(b[columnKey]) ? 1 : -1).reverse();
   }
-  postMessage(arr);
+  if (order === "base") {
+    result = prevData;
+  }
+  postMessage(result);
 };

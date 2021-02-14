@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <a-row>
-      <h1>Excel Viewer</h1>
+      <h1 @click="myCustomSort">Excel Viewer</h1>
       <div></div>
     </a-row>
     <a-row>
@@ -41,6 +41,7 @@
           bordered
           :loading="!loaded"
           :pagination="false"
+          @change="changeTable"
         />
       </a-col>
     </a-row>
@@ -165,7 +166,7 @@ export default class ExcelViewer extends Vue {
   }
 
   sortWithWorker(a: any, b: any, key: string) {
-    const worker = new Worker("sort.worker.js");
+    const worker = new Worker("worker.js");
     let result = -1;
     worker.onmessage = ({ data }) => {
       result = data;
@@ -213,15 +214,34 @@ export default class ExcelViewer extends Vue {
         title: key,
         key: key.toString(),
         dataIndex: key,
-        sorter: (a, b) => {
-          return this.sortWithWorker(a, b, key);
-        },
+        // sorter: (a, b) => {
+        //   return this.sortWithWorker(a, b, key);
+        // },
+        sorter: true,
         ellipsis: true
       });
       index++;
     }
     this.columns = tmp;
     return tmp;
+  }
+
+  changeTable(pagination, filters, sorter) {
+    const { columnKey, order } = sorter;
+    this.myCustomSort(order, columnKey);
+    if (!order) this.myCustomSort("base", columnKey);
+  }
+
+  myCustomSort(order, columnKey) {
+    const worker = new Worker("worker.js");
+    worker.onmessage = (e) => {
+      this.dataTable = e.data;
+    };
+    worker.postMessage([order, columnKey, this.dataTable, this.data]);
+  }
+
+  onChangeTable() {
+    console.log("change table");
   }
 
   // Достаём данные из файла
