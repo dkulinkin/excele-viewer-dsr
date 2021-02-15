@@ -1,9 +1,8 @@
 self.onmessage = ({ data }) => {
   const result = self.filterTableData(data[0], data[1]);
   postMessage(result);
- //self.close();
+  //self.close();
 };
-
 
 function filterTableData(params, data) {
   const x = params.get("x");

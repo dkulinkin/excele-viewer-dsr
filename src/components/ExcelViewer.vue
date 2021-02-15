@@ -69,6 +69,10 @@ export default class ExcelViewer extends Vue {
     this.loaded = false;
   }
 
+  mounted() {
+    this.reset();
+  }
+
   // Фильтруем данные
   filterTableData(params) {
     const x = params.get("x");
@@ -129,7 +133,6 @@ export default class ExcelViewer extends Vue {
             this.dataTable = e.data;
           };
           filterWorker.postMessage([params, this.data]);
-
         }
       }
       if (this.filterStr.includes("AND")) {
@@ -179,7 +182,7 @@ export default class ExcelViewer extends Vue {
   }
 
   sortWithWorker(order, columnKey) {
-    const worker = new Worker("worker.js");
+    const worker = new Worker("sort.worker.js");
     worker.onmessage = (e) => {
       this.dataTable = e.data;
     };

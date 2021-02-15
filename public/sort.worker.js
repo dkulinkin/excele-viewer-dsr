@@ -7,13 +7,17 @@ self.onmessage = ({ data }) => {
   let result = [];
   const prevData = initData;
   if (order === "ascend") {
-    result = dataTable.sort((a, b) => String(a[columnKey]) > String(b[columnKey]) ? 1 : -1);
+    result = dataTable.sort((a, b) =>
+      String(a[columnKey]) > String(b[columnKey]) ? 1 : -1
+    );
   } else {
-    result = dataTable.sort((a, b) => String(a[columnKey]) > String(b[columnKey]) ? 1 : -1).reverse();
+    result = dataTable
+      .sort((a, b) => (String(a[columnKey]) > String(b[columnKey]) ? 1 : -1))
+      .reverse();
   }
   if (order === "base") {
     result = prevData;
   }
   postMessage(result);
-  self.close();
+  // self.close();
 };
