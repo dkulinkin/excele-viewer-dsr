@@ -1,5 +1,4 @@
 self.onmessage = ({ data }) => {
-  console.log('SRC')
   const order = data[0];
   const columnKey = data[1];
   const dataTable = data[2];
