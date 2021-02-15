@@ -15,5 +15,4 @@ self.onmessage = ({ data }) => {
     result = prevData;
   }
   postMessage(result);
-  self.close();
 };

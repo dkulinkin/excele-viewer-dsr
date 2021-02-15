@@ -1,4 +1,5 @@
 self.onmessage = ({ data }) => {
+  console.log('SRC')
   const order = data[0];
   const columnKey = data[1];
   const dataTable = data[2];
@@ -15,5 +16,4 @@ self.onmessage = ({ data }) => {
     result = prevData;
   }
   postMessage(result);
-  self.close();
 };

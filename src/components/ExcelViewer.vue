@@ -1,7 +1,7 @@
 <template>
   <div class="container">
     <a-row>
-      <h1 @click="myCustomSort">Excel Viewer</h1>
+      <h1>Excel Viewer</h1>
       <div></div>
     </a-row>
     <a-row>
@@ -100,6 +100,7 @@ export default class ExcelViewer extends Vue {
 
   // Строка фильтра
   changeFilter() {
+    const filterWorker = new Worker("filter.worker.js");
     const params = new Map();
     if (this.filterStr) {
       if (this.filterStr.includes("=")) {
@@ -110,7 +111,10 @@ export default class ExcelViewer extends Vue {
           params.set("y", y.toString());
           params.set("operator", "=");
 
-          this.dataTable = this.filterTableData(params);
+          filterWorker.onmessage = (e) => {
+            this.dataTable = e.data;
+          };
+          filterWorker.postMessage([params, this.data]);
         }
       }
       if (this.filterStr.includes("LIKE")) {
@@ -120,15 +124,20 @@ export default class ExcelViewer extends Vue {
           params.set("x", x.toString());
           params.set("y", y.toString());
           params.set("operator", "LIKE");
-          this.dataTable = this.filterTableData(params);
+
+          filterWorker.onmessage = (e) => {
+            this.dataTable = e.data;
+          };
+          filterWorker.postMessage([params, this.data]);
+
         }
       }
       if (this.filterStr.includes("AND")) {
-        this.operatorANDWithOR(params, "AND");
+        this.operatorANDWithOR(params, "AND", filterWorker);
       }
 
       if (this.filterStr.includes("OR")) {
-        this.operatorANDWithOR(params, "OR");
+        this.operatorANDWithOR(params, "OR", filterWorker);
       }
     } else {
       this.dataTable = this.data;
@@ -136,7 +145,7 @@ export default class ExcelViewer extends Vue {
   }
 
   // AND, OR
-  operatorANDWithOR(params, operator) {
+  operatorANDWithOR(params, operator, worker) {
     if (this.filterStr.includes(operator)) {
       const x = this.filterStr.split(operator)[0].trim();
       const y = this.filterStr.split(operator)[1].trim();
@@ -154,7 +163,11 @@ export default class ExcelViewer extends Vue {
           params.set("operator", operator);
         }
       }
-      this.dataTable = this.filterTableData(params);
+
+      worker.onmessage = (e) => {
+        this.dataTable = e.data;
+      };
+      worker.postMessage([params, this.data]);
     }
   }
 
@@ -165,15 +178,12 @@ export default class ExcelViewer extends Vue {
     };
   }
 
-  sortWithWorker(a: any, b: any, key: string) {
+  sortWithWorker(order, columnKey) {
     const worker = new Worker("worker.js");
-    let result = -1;
-    worker.onmessage = ({ data }) => {
-      result = data;
+    worker.onmessage = (e) => {
+      this.dataTable = e.data;
     };
-    worker.postMessage([a[key], b[key]]);
-    worker.terminate();
-    return result;
+    worker.postMessage([order, columnKey, this.dataTable, this.data]);
   }
 
   async handleChange(info) {
@@ -214,9 +224,6 @@ export default class ExcelViewer extends Vue {
         title: key,
         key: key.toString(),
         dataIndex: key,
-        // sorter: (a, b) => {
-        //   return this.sortWithWorker(a, b, key);
-        // },
         sorter: true,
         ellipsis: true
       });
@@ -228,23 +235,11 @@ export default class ExcelViewer extends Vue {
 
   changeTable(pagination, filters, sorter) {
     const { columnKey, order } = sorter;
-    this.myCustomSort(order, columnKey);
-    if (!order) this.myCustomSort("base", columnKey);
+    this.sortWithWorker(order, columnKey);
+    if (!order) this.sortWithWorker("base", columnKey);
   }
 
-  myCustomSort(order, columnKey) {
-    const worker = new Worker("worker.js");
-    worker.onmessage = (e) => {
-      this.dataTable = e.data;
-    };
-    worker.postMessage([order, columnKey, this.dataTable, this.data]);
-  }
-
-  onChangeTable() {
-    console.log("change table");
-  }
-
-  // Достаём данные из файла
+  // Получаем данные из файла
   convert(selectedFile: any) {
     return new Promise((resolve) => {
       const fileReader = new FileReader();
